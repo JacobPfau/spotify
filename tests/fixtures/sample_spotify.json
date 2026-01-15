@@ -1,0 +1,25 @@
+{
+  "artists": {
+    "items": [
+      {"id": "artist1", "name": "Radiohead", "genres": ["alternative rock", "art rock"], "popularity": 82},
+      {"id": "artist2", "name": "Kendrick Lamar", "genres": ["hip hop", "rap"], "popularity": 91},
+      {"id": "artist3", "name": "Taylor Swift", "genres": ["pop", "country pop"], "popularity": 100},
+      {"id": "artist4", "name": "Aphex Twin", "genres": ["electronic", "idm"], "popularity": 65},
+      {"id": "artist5", "name": "Miles Davis", "genres": ["jazz", "modal jazz"], "popularity": 72}
+    ]
+  },
+  "tracks": {
+    "items": [
+      {"id": "track1", "name": "Paranoid Android", "artists": [{"id": "artist1", "name": "Radiohead"}], "preview_url": null},
+      {"id": "track2", "name": "Karma Police", "artists": [{"id": "artist1", "name": "Radiohead"}], "preview_url": null},
+      {"id": "track3", "name": "HUMBLE.", "artists": [{"id": "artist2", "name": "Kendrick Lamar"}], "preview_url": null},
+      {"id": "track4", "name": "DNA.", "artists": [{"id": "artist2", "name": "Kendrick Lamar"}], "preview_url": null},
+      {"id": "track5", "name": "Shake It Off", "artists": [{"id": "artist3", "name": "Taylor Swift"}], "preview_url": null},
+      {"id": "track6", "name": "Blank Space", "artists": [{"id": "artist3", "name": "Taylor Swift"}], "preview_url": null},
+      {"id": "track7", "name": "Windowlicker", "artists": [{"id": "artist4", "name": "Aphex Twin"}], "preview_url": null},
+      {"id": "track8", "name": "So What", "artists": [{"id": "artist5", "name": "Miles Davis"}], "preview_url": null},
+      {"id": "track9", "name": "Blue in Green", "artists": [{"id": "artist5", "name": "Miles Davis"}], "preview_url": null},
+      {"id": "track10", "name": "Feature Track", "artists": [{"id": "unknown_artist", "name": "Unknown"}], "preview_url": null}
+    ]
+  }
+}
