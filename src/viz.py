@@ -334,7 +334,7 @@ def plot_genre_quadrants(
     raw_genre_y = [posterior_summary[a.id]["genre_mean"][1] for a in artists]
 
     # Scale factor to spread points apart - multiply coordinates by this
-    SPREAD_MULTIPLIER = 3.0
+    SPREAD_MULTIPLIER = 6.0
 
     genre_x = [x * SPREAD_MULTIPLIER for x in raw_genre_x]
     genre_y = [y * SPREAD_MULTIPLIER for y in raw_genre_y]
@@ -476,8 +476,23 @@ def plot_genre_quadrants(
         else:
             text_color = "#b3b3b3"
 
-        # Add image if available
+        # Add image if available - with circular masking effect
         if artist.image_url:
+            # Draw dark background circle first (to mask square image corners)
+            fig.add_shape(
+                type="circle",
+                x0=x - img_size / 2,
+                y0=y - img_size / 2,
+                x1=x + img_size / 2,
+                y1=y + img_size / 2,
+                xref="x",
+                yref="y",
+                line=dict(width=0),
+                fillcolor="#121212",
+                layer="above",
+            )
+            # Add image slightly smaller than circle so corners get clipped
+            inner_size = img_size * 0.71  # sqrt(2)/2 to inscribe square in circle
             fig.add_layout_image(
                 dict(
                     source=artist.image_url,
@@ -485,17 +500,17 @@ def plot_genre_quadrants(
                     y=y,
                     xref="x",
                     yref="y",
-                    sizex=img_size,
-                    sizey=img_size,
+                    sizex=inner_size,
+                    sizey=inner_size,
                     xanchor="center",
                     yanchor="middle",
                     layer="above",
                     opacity=opacity,
                 )
             )
-            # Add circular border around image for visual polish
+            # Add circular border on top
             border_color = "#1DB954" if is_top else ("#ffffff" if is_top3 else "#535353")
-            border_width = 3 if is_top else (2 if is_top3 else 1)
+            border_width = 4 if is_top else (3 if is_top3 else 2)
             fig.add_shape(
                 type="circle",
                 x0=x - img_size / 2,

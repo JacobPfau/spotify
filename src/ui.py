@@ -712,7 +712,7 @@ def render_comparison_page(
             return ComparisonResult.PREFER_B
 
     # Help text
-    st.caption("Choose 'Can't Compare' if these artists feel like they're doing fundamentally different things - not because you're unsure.")
+    st.caption("Choose 'Can't Compare' if these artists feel like they're doing fundamentally different things (e.g. high energy vs low energy) — not because you're unsure.")
 
     return None
 
@@ -747,7 +747,7 @@ def render_progress_sidebar(
 
 
 def render_confidence_banner(confidence: dict | None) -> None:
-    """Render the ranking confidence banner."""
+    """Render the ranking confidence banner with milestone markers."""
     if confidence is None:
         return
 
@@ -756,18 +756,18 @@ def render_confidence_banner(confidence: dict | None) -> None:
     percent = confidence["percent_complete"]
     to_next = confidence["comparisons_to_next"]
 
-    # Banner message based on stage
+    # Banner message based on stage with specific milestones
     if status == "warming_up":
-        msg = f"**{status_label}** - {to_next} more comparisons to first ranking"
+        msg = f"**{status_label}** — {to_next} to go until initial ranking"
         st.info(msg)
     elif status == "early":
-        msg = f"**{status_label}** - {percent:.0f}% of pairs compared"
+        msg = f"**{status_label}** — {to_next} to go until ranking stabilizes"
         st.info(msg)
     elif status == "refining":
-        msg = f"**{status_label}** - {percent:.0f}% complete, ranking becoming reliable"
+        msg = f"**{status_label}** — {to_next} to go until solid ranking"
         st.success(msg)
     else:  # solid
-        msg = f"**{status_label}** - {percent:.0f}% complete"
+        msg = f"**{status_label}** — ranking is reliable ({percent:.0f}% of pairs compared)"
         st.success(msg)
 
 
@@ -791,19 +791,19 @@ def render_results_page(
     # Confidence banner
     render_confidence_banner(ranking_confidence)
 
-    # Utility ranking
+    # Genre space (Music Taste Map) - show first
+    if k_dims == 1:
+        st.subheader("Genre Space")
+        fig_genre = plot_genre_space_1d(artists, posterior_summary)
+    else:
+        # Use quadrant visualization for 2D (with or without LLM labels)
+        fig_genre = plot_genre_quadrants(artists, posterior_summary, quadrant_labels)
+    st.plotly_chart(fig_genre, use_container_width=True)
+
+    # Utility ranking - show below
     st.subheader("Artist Preference Ranking")
     fig_ranking = plot_utility_ranking(artists, posterior_summary)
     st.plotly_chart(fig_ranking, use_container_width=True)
-
-    # Genre space
-    st.subheader("Genre Space")
-    if k_dims == 1:
-        fig_genre = plot_genre_space_1d(artists, posterior_summary)
-    else:
-        # Always use quadrant visualization for 2D (with or without LLM labels)
-        fig_genre = plot_genre_quadrants(artists, posterior_summary, quadrant_labels)
-    st.plotly_chart(fig_genre, use_container_width=True)
 
 
 def render_export_page(
