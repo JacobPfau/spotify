@@ -725,9 +725,32 @@ def render_progress_sidebar(
     """Render progress information in the sidebar."""
     st.sidebar.header("Progress")
 
-    progress = len(comparisons) / total_pairs if total_pairs > 0 else 0
+    n_comparisons = len(comparisons)
+
+    # Show milestone info prominently at top
+    if ranking_confidence:
+        status = ranking_confidence.get("status", "warming_up")
+        to_next = ranking_confidence.get("comparisons_to_next", 0)
+
+        if status == "warming_up":
+            st.sidebar.markdown(f"### {to_next} to go")
+            st.sidebar.caption("until initial ranking")
+        elif status == "early":
+            st.sidebar.markdown(f"### {to_next} to go")
+            st.sidebar.caption("until ranking stabilizes")
+        elif status == "refining":
+            st.sidebar.markdown(f"### {to_next} to go")
+            st.sidebar.caption("until solid ranking")
+        else:
+            st.sidebar.markdown("### Ranking solid!")
+            st.sidebar.caption("Keep going to refine further")
+
+        st.sidebar.divider()
+
+    # Simple progress bar (don't show intimidating total)
+    progress = n_comparisons / total_pairs if total_pairs > 0 else 0
     st.sidebar.progress(progress)
-    st.sidebar.write(f"{len(comparisons)} / {total_pairs} pairs compared")
+    st.sidebar.caption(f"{n_comparisons} comparisons made")
 
     # Count by result type
     prefer_a = sum(1 for c in comparisons if c.result == ComparisonResult.PREFER_A)
@@ -736,14 +759,6 @@ def render_progress_sidebar(
 
     st.sidebar.write(f"- Preferences: {prefer_a + prefer_b}")
     st.sidebar.write(f"- Abstentions: {abstain}")
-
-    # Show ranking confidence status
-    if ranking_confidence:
-        st.sidebar.divider()
-        st.sidebar.write(f"**{ranking_confidence.get('status_label', 'Ranking')}**")
-        to_next = ranking_confidence.get("comparisons_to_next", 0)
-        if to_next > 0:
-            st.sidebar.caption(f"{to_next} to next stage")
 
 
 def render_confidence_banner(confidence: dict | None) -> None:
