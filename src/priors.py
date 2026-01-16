@@ -32,7 +32,7 @@ def build_distance_prompt(artists: list[Artist]) -> str:
     prompt = f"""Given these musical artists:
 {artist_list}
 
-Rate the musical/genre distance between each pair on a 1-5 scale:
+Rate the musical/genre distance between each pair on a 1-5 scale, the goal is to quantify how likely these two artists are to be comparable in quality (high energy and low energy are incomparable; folk music and melodic house are incomparable; metal and hip hop may be somewhat comparable etc.):
 1 = very similar (same genre, similar style)
 2 = somewhat similar (related genres, compatible styles)
 3 = moderately different (different genres but some overlap)
@@ -168,7 +168,7 @@ async def get_genre_priors_from_llm(
     prompt = build_distance_prompt(artists)
 
     message = await client.messages.create(
-        model="claude-sonnet-4-5-latest",
+        model="claude-sonnet-4-20250514",
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -187,21 +187,36 @@ async def get_genre_priors_from_llm(
 def get_genre_priors_from_llm_sync(
     artists: list[Artist],
     k_dims: int = 1,
+    on_prompt: callable = None,
+    on_response: callable = None,
 ) -> np.ndarray:
-    """Synchronous version of get_genre_priors_from_llm."""
+    """Synchronous version of get_genre_priors_from_llm.
+
+    Args:
+        artists: List of artists
+        k_dims: Number of dimensions for MDS
+        on_prompt: Optional callback called with the prompt text
+        on_response: Optional callback called with the response text
+    """
     import anthropic
 
     client = anthropic.Anthropic()
 
     prompt = build_distance_prompt(artists)
 
+    if on_prompt:
+        on_prompt(prompt)
+
     message = client.messages.create(
-        model="claude-sonnet-4-5-latest",
-        max_tokens=4096,
+        model="claude-sonnet-4-20250514",
+        max_tokens=16384,
         messages=[{"role": "user", "content": prompt}],
     )
 
     response_text = message.content[0].text
+
+    if on_response:
+        on_response(response_text)
 
     # Parse distances
     distances = parse_distance_response(response_text, artists)
@@ -266,7 +281,7 @@ Only return the JSON, no other text."""
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-5-latest",
+            model="claude-sonnet-4-20250514",
             max_tokens=256,
             messages=[{"role": "user", "content": prompt}],
         )

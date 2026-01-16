@@ -605,10 +605,18 @@ def main() -> None:
             key="nav",
         )
 
-        # Show progress
+        # Show progress - always recompute ranking confidence
         artists = st.session_state.artists
         comparisons = st.session_state.comparisons
         total_pairs = len(get_artist_pairs(artists))
+
+        # Update ranking confidence on every render
+        from src.model import compute_ranking_confidence
+        st.session_state.ranking_confidence = compute_ranking_confidence(
+            n_comparisons=len(comparisons),
+            total_pairs=total_pairs,
+        )
+
         render_progress_sidebar(
             comparisons,
             total_pairs,

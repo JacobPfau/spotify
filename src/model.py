@@ -44,7 +44,8 @@ def artist_preference_model(
     alpha = numpyro.sample("alpha", dist.Normal(1.0, 1.0))
 
     # Comparability lengthscales (ARD for k_dims > 1)
-    tau = numpyro.sample("tau", dist.HalfNormal(1.0).expand([k_dims]))
+    # Prior centered at 1.7 based on calibration with Spotify genre data
+    tau = numpyro.sample("tau", dist.HalfNormal(1.7).expand([k_dims]))
 
     # Utility scale
     sigma_s = numpyro.sample("sigma_s", dist.HalfNormal(1.0))

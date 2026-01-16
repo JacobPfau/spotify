@@ -170,6 +170,19 @@ def _load_from_data_dir_with_defaults(data_dir: Path) -> None:
         st.session_state.k_dims = k_dims
         st.session_state.setup_complete = True
 
+        # Generate quadrant labels from priors immediately (2D only)
+        if k_dims == 2 and use_llm_priors:
+            try:
+                from src.viz import get_artists_by_quadrant_from_priors
+                from src.priors import get_quadrant_labels_from_llm
+
+                artists_by_quadrant = get_artists_by_quadrant_from_priors(artists, prior_genre_means)
+                quadrant_labels = get_quadrant_labels_from_llm(artists_by_quadrant)
+                st.session_state.quadrant_labels = quadrant_labels
+                st.session_state.quadrant_labels_generated = True
+            except Exception:
+                pass  # Use default labels
+
         st.rerun()
 
     except Exception as e:
@@ -234,6 +247,19 @@ def _render_settings_panel(data_dir: Path, has_data_files: bool) -> None:
                 st.session_state.prior_genre_means = prior_genre_means
                 st.session_state.k_dims = k_dims
                 st.session_state.setup_complete = True
+
+                # Generate quadrant labels from priors immediately (2D only)
+                if k_dims == 2 and use_llm_priors:
+                    try:
+                        from src.viz import get_artists_by_quadrant_from_priors
+                        from src.priors import get_quadrant_labels_from_llm
+
+                        artists_by_quadrant = get_artists_by_quadrant_from_priors(artists, prior_genre_means)
+                        quadrant_labels = get_quadrant_labels_from_llm(artists_by_quadrant)
+                        st.session_state.quadrant_labels = quadrant_labels
+                        st.session_state.quadrant_labels_generated = True
+                    except Exception:
+                        pass
 
                 st.rerun()
 
@@ -364,9 +390,25 @@ def _fetch_spotify_data_with_token(token: str) -> None:
         k_dims = 2
         prior_genre_means = None
 
-        with st.spinner("Setting up your ranking..."):
+        # Show Claude query/response while waiting
+        prompt_container = st.empty()
+        response_container = st.empty()
+
+        def show_prompt(prompt: str):
+            with prompt_container.expander("Claude Query", expanded=True):
+                st.code(prompt[:2000] + "..." if len(prompt) > 2000 else prompt)
+
+        def show_response(response: str):
+            with response_container.expander("Claude Response", expanded=False):
+                st.code(response[:3000] + "..." if len(response) > 3000 else response)
+
+        with st.spinner("Analyzing your artists with Claude..."):
             try:
-                prior_genre_means = get_genre_priors_from_llm_sync(artists, k_dims=k_dims)
+                prior_genre_means = get_genre_priors_from_llm_sync(
+                    artists, k_dims=k_dims,
+                    on_prompt=show_prompt,
+                    on_response=show_response,
+                )
             except Exception:
                 prior_genre_means = get_default_priors(len(artists), k_dims=k_dims)
 
@@ -377,6 +419,19 @@ def _fetch_spotify_data_with_token(token: str) -> None:
         st.session_state.prior_genre_means = prior_genre_means
         st.session_state.k_dims = k_dims
         st.session_state.setup_complete = True
+
+        # Generate quadrant labels from priors immediately (2D only)
+        if k_dims == 2:
+            try:
+                from src.viz import get_artists_by_quadrant_from_priors
+                from src.priors import get_quadrant_labels_from_llm
+
+                artists_by_quadrant = get_artists_by_quadrant_from_priors(artists, prior_genre_means)
+                quadrant_labels = get_quadrant_labels_from_llm(artists_by_quadrant)
+                st.session_state.quadrant_labels = quadrant_labels
+                st.session_state.quadrant_labels_generated = True
+            except Exception:
+                pass
 
         st.success(f"Loaded {len(artists)} artists with {sum(len(s) for s in songs_by_artist.values())} tracks!")
         st.rerun()
@@ -417,9 +472,25 @@ def _process_uploaded_file(uploaded_file) -> None:
         k_dims = 2
         prior_genre_means = None
 
-        with st.spinner("Setting up your ranking..."):
+        # Show Claude query/response while waiting
+        prompt_container = st.empty()
+        response_container = st.empty()
+
+        def show_prompt(prompt: str):
+            with prompt_container.expander("Claude Query", expanded=True):
+                st.code(prompt[:2000] + "..." if len(prompt) > 2000 else prompt)
+
+        def show_response(response: str):
+            with response_container.expander("Claude Response", expanded=False):
+                st.code(response[:3000] + "..." if len(response) > 3000 else response)
+
+        with st.spinner("Analyzing your artists with Claude..."):
             try:
-                prior_genre_means = get_genre_priors_from_llm_sync(artists, k_dims=k_dims)
+                prior_genre_means = get_genre_priors_from_llm_sync(
+                    artists, k_dims=k_dims,
+                    on_prompt=show_prompt,
+                    on_response=show_response,
+                )
             except Exception:
                 prior_genre_means = get_default_priors(len(artists), k_dims=k_dims)
 
@@ -430,6 +501,19 @@ def _process_uploaded_file(uploaded_file) -> None:
         st.session_state.prior_genre_means = prior_genre_means
         st.session_state.k_dims = k_dims
         st.session_state.setup_complete = True
+
+        # Generate quadrant labels from priors immediately (2D only)
+        if k_dims == 2:
+            try:
+                from src.viz import get_artists_by_quadrant_from_priors
+                from src.priors import get_quadrant_labels_from_llm
+
+                artists_by_quadrant = get_artists_by_quadrant_from_priors(artists, prior_genre_means)
+                quadrant_labels = get_quadrant_labels_from_llm(artists_by_quadrant)
+                st.session_state.quadrant_labels = quadrant_labels
+                st.session_state.quadrant_labels_generated = True
+            except Exception:
+                pass
 
         st.success(f"Loaded {len(artists)} artists!")
         st.rerun()

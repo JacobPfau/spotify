@@ -290,6 +290,43 @@ def get_artists_by_quadrant(
     return quadrants
 
 
+def get_artists_by_quadrant_from_priors(
+    artists: list[Artist],
+    prior_means: "np.ndarray",
+) -> dict[str, list[str]]:
+    """Group artists by quadrant using prior positions (before inference).
+
+    Args:
+        artists: List of artists
+        prior_means: n_artists x k_dims array of prior genre positions
+
+    Returns:
+        Dict mapping quadrant names to lists of artist names
+    """
+    import numpy as np
+
+    quadrants: dict[str, list[str]] = {
+        "top_left": [],
+        "top_right": [],
+        "bottom_left": [],
+        "bottom_right": [],
+    }
+
+    for i, artist in enumerate(artists):
+        x, y = prior_means[i, 0], prior_means[i, 1]
+
+        if x < 0 and y >= 0:
+            quadrants["top_left"].append(artist.name)
+        elif x >= 0 and y >= 0:
+            quadrants["top_right"].append(artist.name)
+        elif x < 0 and y < 0:
+            quadrants["bottom_left"].append(artist.name)
+        else:
+            quadrants["bottom_right"].append(artist.name)
+
+    return quadrants
+
+
 def plot_genre_quadrants(
     artists: list[Artist],
     posterior_summary: dict[str, dict[str, float]],
@@ -390,32 +427,40 @@ def plot_genre_quadrants(
         line=dict(color="#535353", width=1),
     )
 
-    # Add quadrant labels as annotations
-    label_offset = 0.3
+    # Add quadrant labels as annotations - pushed further out with style
+    # Use data range for positioning (calculated here early)
+    x_range_early = x_max - x_min
+    y_range_early = y_max - y_min
+    data_range_early = max(x_range_early, y_range_early, 1.0)
+    label_padding = data_range_early * 0.2
     annotations = [
         dict(
-            x=x_min + label_offset, y=y_max - label_offset,
-            text=f"<b>{quadrant_labels['top_left']}</b>",
-            showarrow=False, font=dict(size=14, color="#1DB954"),
-            xanchor="left", yanchor="top",
-        ),
-        dict(
-            x=x_max - label_offset, y=y_max - label_offset,
-            text=f"<b>{quadrant_labels['top_right']}</b>",
-            showarrow=False, font=dict(size=14, color="#6464ff"),
-            xanchor="right", yanchor="top",
-        ),
-        dict(
-            x=x_min + label_offset, y=y_min + label_offset,
-            text=f"<b>{quadrant_labels['bottom_left']}</b>",
-            showarrow=False, font=dict(size=14, color="#ff6464"),
+            x=x_min - label_padding * 0.3, y=y_max + label_padding * 0.6,
+            text=f"<b>{quadrant_labels['top_left'].upper()}</b>",
+            showarrow=False,
+            font=dict(size=22, color="#1DB954", family="Arial Black"),
             xanchor="left", yanchor="bottom",
         ),
         dict(
-            x=x_max - label_offset, y=y_min + label_offset,
-            text=f"<b>{quadrant_labels['bottom_right']}</b>",
-            showarrow=False, font=dict(size=14, color="#ffc864"),
+            x=x_max + label_padding * 0.3, y=y_max + label_padding * 0.6,
+            text=f"<b>{quadrant_labels['top_right'].upper()}</b>",
+            showarrow=False,
+            font=dict(size=22, color="#8B5CF6", family="Arial Black"),
             xanchor="right", yanchor="bottom",
+        ),
+        dict(
+            x=x_min - label_padding * 0.3, y=y_min - label_padding * 0.6,
+            text=f"<b>{quadrant_labels['bottom_left'].upper()}</b>",
+            showarrow=False,
+            font=dict(size=22, color="#EF4444", family="Arial Black"),
+            xanchor="left", yanchor="top",
+        ),
+        dict(
+            x=x_max + label_padding * 0.3, y=y_min - label_padding * 0.6,
+            text=f"<b>{quadrant_labels['bottom_right'].upper()}</b>",
+            showarrow=False,
+            font=dict(size=22, color="#F59E0B", family="Arial Black"),
+            xanchor="right", yanchor="top",
         ),
     ]
 
@@ -424,7 +469,7 @@ def plot_genre_quadrants(
     y_range = y_max - y_min
     data_range = max(x_range, y_range, 1.0)
     # Base size relative to spread
-    base_img_size = data_range * 0.06
+    base_img_size = data_range * 0.17  # 30% smaller than 0.24
 
     n_artists = len(artists)
 
@@ -436,10 +481,10 @@ def plot_genre_quadrants(
         x, y = genre_x[i], genre_y[i]
         rank = rank_map[artist.id]
 
-        # Size scales dramatically with preference (higher rank = much bigger)
-        # Top artist is 3x size, bottom is 0.5x - very visible difference
+        # Size scales with preference - top artist bigger, but less extreme range
+        # Top artist is 2x size, bottom is 0.6x
         rank_fraction = rank / max(n_artists - 1, 1)  # 0 for top, 1 for bottom
-        size_multiplier = 3.0 - (2.5 * rank_fraction)  # 3.0 -> 0.5
+        size_multiplier = 2.0 - (1.4 * rank_fraction)  # 2.0 -> 0.6
         img_size = base_img_size * size_multiplier
 
         original_positions.append((x, y))
@@ -451,48 +496,57 @@ def plot_genre_quadrants(
     )
 
     # Second pass: add images at adjusted positions
-    for i, artist in enumerate(artists):
+    # Sort by rank DESCENDING so worst are drawn first (back) and best last (front)
+    artist_indices_by_rank = sorted(
+        range(len(artists)),
+        key=lambda i: rank_map[artists[i].id],
+        reverse=True  # Worst first, best last
+    )
+
+    for i in artist_indices_by_rank:
+        artist = artists[i]
         x, y = adjusted_positions[i]
         img_size = img_sizes[i]
         utility = posterior_summary[artist.id]["utility_mean"]
         rank = rank_map[artist.id]
 
-        # Opacity scales dramatically: top artists fully visible, bottom fades out
-        # Top 3: 100%, then fade from 80% down to 30% for worst
+        # Opacity scales: top artists fully visible, bottom fades out
         rank_fraction = rank / max(n_artists - 1, 1)
         if rank < 3:
             opacity = 1.0
         else:
-            opacity = 0.8 - (0.5 * rank_fraction)  # 0.8 -> 0.3
+            opacity = 0.85 - (0.4 * rank_fraction)  # 0.85 -> 0.45
 
         is_top = rank == 0
         is_top3 = rank < 3
 
         # Text styling based on rank
         if is_top:
-            text_color = "#1DB954"
+            text_color = "#FFD700"  # Gold
         elif is_top3:
             text_color = "#ffffff"
         else:
             text_color = "#b3b3b3"
 
-        # Add image if available - with circular masking effect
+        # Border color: gold -> silver -> bronze -> faded gray
+        if rank == 0:
+            border_color = "#FFD700"  # Gold
+            border_width = 5
+        elif rank == 1:
+            border_color = "#C0C0C0"  # Silver
+            border_width = 4
+        elif rank == 2:
+            border_color = "#CD7F32"  # Bronze
+            border_width = 4
+        elif rank < 6:
+            border_color = "#8B7355"  # Faded bronze
+            border_width = 3
+        else:
+            border_color = "#404040"  # Dark gray
+            border_width = 2
+
         if artist.image_url:
-            # Draw dark background circle first (to mask square image corners)
-            fig.add_shape(
-                type="circle",
-                x0=x - img_size / 2,
-                y0=y - img_size / 2,
-                x1=x + img_size / 2,
-                y1=y + img_size / 2,
-                xref="x",
-                yref="y",
-                line=dict(width=0),
-                fillcolor="#121212",
-                layer="above",
-            )
-            # Add image slightly smaller than circle so corners get clipped
-            inner_size = img_size * 0.71  # sqrt(2)/2 to inscribe square in circle
+            # Add square image
             fig.add_layout_image(
                 dict(
                     source=artist.image_url,
@@ -500,46 +554,72 @@ def plot_genre_quadrants(
                     y=y,
                     xref="x",
                     yref="y",
-                    sizex=inner_size,
-                    sizey=inner_size,
+                    sizex=img_size,
+                    sizey=img_size,
                     xanchor="center",
                     yanchor="middle",
-                    layer="above",
+                    layer="below",
                     opacity=opacity,
                 )
             )
-            # Add circular border on top
-            border_color = "#1DB954" if is_top else ("#ffffff" if is_top3 else "#535353")
-            border_width = 4 if is_top else (3 if is_top3 else 2)
+        else:
+            # No image - draw filled square placeholder
             fig.add_shape(
-                type="circle",
+                type="rect",
                 x0=x - img_size / 2,
                 y0=y - img_size / 2,
                 x1=x + img_size / 2,
                 y1=y + img_size / 2,
                 xref="x",
                 yref="y",
-                line=dict(color=border_color, width=border_width),
-                fillcolor="rgba(0,0,0,0)",
-                layer="above",
+                line=dict(color="#404040", width=1),
+                fillcolor="#282828",
+                layer="below",
             )
 
-        # Add text label and invisible marker for hover
+        # Add rank number in top-left corner - only colored for top 3
+        if rank == 0:
+            rank_color = "#FFD700"  # Gold
+        elif rank == 1:
+            rank_color = "#C0C0C0"  # Silver
+        elif rank == 2:
+            rank_color = "#CD7F32"  # Bronze
+        else:
+            rank_color = "#888888"  # Subtle gray for others
+
+        annotations.append(dict(
+            x=x - img_size / 2 + img_size * 0.08,
+            y=y + img_size / 2 - img_size * 0.08,
+            text=f"<b>{rank + 1}</b>",
+            showarrow=False,
+            font=dict(size=14 if rank < 3 else 10, color=rank_color, family="Arial Black"),
+            xanchor="left",
+            yanchor="top",
+        ))
+
+        # Add text label below image
+        annotations.append(dict(
+            x=x,
+            y=y - img_size / 2 - 0.08,
+            text=artist.name,
+            showarrow=False,
+            font=dict(
+                size=13 if is_top else 11,
+                color=text_color,
+                family="Arial Black" if is_top else "Arial",
+            ),
+            yanchor="top",
+        ))
+
+        # Add invisible scatter point for hover - larger target at center of image
         fig.add_trace(
             go.Scatter(
                 x=[x],
                 y=[y],
-                mode="markers+text",
-                text=[artist.name],
-                textposition="top center",
-                textfont=dict(
-                    size=13 if is_top else 11,
-                    color=text_color,
-                    family="Arial Black" if is_top else "Arial",
-                ),
+                mode="markers",
                 marker=dict(
-                    size=img_size * 100,  # Rough pixel conversion for hover area
-                    color="rgba(0,0,0,0)",  # Invisible
+                    size=80,  # Larger hover target for bigger images
+                    color="rgba(0,0,0,0)",
                     line=dict(width=0),
                 ),
                 hovertemplate=(
@@ -552,36 +632,42 @@ def plot_genre_quadrants(
             )
         )
 
+    # Add padding around the edges for larger images
+    padding = data_range * 0.15
     fig.update_layout(
         title=dict(
             text="Your Music Taste Map",
-            font=dict(size=24, color="#ffffff"),
+            font=dict(size=26, color="#ffffff"),
+            x=0.5,
+            xanchor="center",
         ),
         xaxis=dict(
             title="",
             showgrid=False,
             zeroline=False,
             showticklabels=False,
-            range=[x_min - 0.5, x_max + 0.5],
+            range=[x_min - padding, x_max + padding],
         ),
         yaxis=dict(
             title="",
             showgrid=False,
             zeroline=False,
             showticklabels=False,
-            range=[y_min - 0.5, y_max + 0.5],
+            range=[y_min - padding, y_max + padding],
             scaleanchor="x",
             scaleratio=1,
         ),
-        height=700,
+        height=900,
         annotations=annotations,
         plot_bgcolor="#121212",
         paper_bgcolor="#121212",
         hoverlabel=dict(
-            bgcolor="#282828",
+            bgcolor="#1a1a1a",
+            bordercolor="#1DB954",
             font_size=14,
             font_color="#ffffff",
         ),
+        margin=dict(l=20, r=20, t=60, b=20),
     )
 
     return fig
