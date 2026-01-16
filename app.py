@@ -414,7 +414,7 @@ def handle_spotify_callback() -> bool:
             artists_json, tracks_json = fetch_spotify_data(
                 sp,
                 max_artists=50,  # Fetch up to 50, user can filter later
-                max_tracks=250,
+                max_tracks=1000,
                 time_range=time_range,
             )
 

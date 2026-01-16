@@ -158,16 +158,19 @@ def filter_songs_by_artists(
 
 
 def filter_artists_with_songs(
-    artists: list[Artist], songs_by_artist: dict[str, list[Song]]
+    artists: list[Artist],
+    songs_by_artist: dict[str, list[Song]],
+    min_songs: int = 3,
 ) -> list[Artist]:
-    """Remove artists that have no songs after filtering."""
-    return [a for a in artists if songs_by_artist.get(a.id)]
+    """Remove artists that have fewer than min_songs after filtering."""
+    return [a for a in artists if len(songs_by_artist.get(a.id, [])) >= min_songs]
 
 
 def process_spotify_data(
     artists_json: dict[str, Any],
     tracks_json_list: list[dict[str, Any]],
     max_artists: int = 25,
+    min_songs: int = 3,
 ) -> tuple[list[Artist], dict[str, list[Song]]]:
     """Process Spotify JSON data into artists and filtered songs.
 
@@ -176,6 +179,7 @@ def process_spotify_data(
         tracks_json_list: List of responses from Get User's Top Tracks endpoint
             (may be multiple due to pagination, 50 per page)
         max_artists: Maximum number of artists to consider
+        min_songs: Minimum number of songs required to keep an artist
 
     Returns:
         Tuple of (filtered artists, songs grouped by artist)
@@ -192,8 +196,8 @@ def process_spotify_data(
     # Filter songs to only those by our top artists
     songs_by_artist = filter_songs_by_artists(all_songs, artist_ids)
 
-    # Remove artists with no songs
-    filtered_artists = filter_artists_with_songs(all_artists, songs_by_artist)
+    # Remove artists with fewer than min_songs
+    filtered_artists = filter_artists_with_songs(all_artists, songs_by_artist, min_songs)
 
     # Clean up songs dict to only include artists we're keeping
     final_artist_ids = {a.id for a in filtered_artists}
@@ -244,6 +248,7 @@ def get_uncompared_pairs(
 def load_from_data_dir(
     data_dir: str | Path = "data",
     max_artists: int = 25,
+    min_songs: int = 3,
 ) -> tuple[list[Artist], dict[str, list[Song]]]:
     """Load Spotify data from the data directory.
 
@@ -254,6 +259,7 @@ def load_from_data_dir(
     Args:
         data_dir: Path to data directory
         max_artists: Maximum number of artists to include
+        min_songs: Minimum number of songs required to keep an artist
 
     Returns:
         Tuple of (filtered artists, songs grouped by artist)
@@ -277,4 +283,4 @@ def load_from_data_dir(
     if not tracks_json_list:
         raise FileNotFoundError(f"No tracks files found in {data_path}")
 
-    return process_spotify_data(artists_json, tracks_json_list, max_artists=max_artists)
+    return process_spotify_data(artists_json, tracks_json_list, max_artists=max_artists, min_songs=min_songs)

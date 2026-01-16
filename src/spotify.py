@@ -140,7 +140,7 @@ def fetch_top_artists(
 
 def fetch_top_tracks(
     sp: spotipy.Spotify,
-    limit: int = 250,
+    limit: int = 1000,
     time_range: str = "medium_term",
 ) -> dict[str, Any]:
     """Fetch user's top tracks with pagination.
@@ -180,7 +180,7 @@ def fetch_top_tracks(
 def fetch_spotify_data(
     sp: spotipy.Spotify,
     max_artists: int = 25,
-    max_tracks: int = 250,
+    max_tracks: int = 1000,
     time_range: str = "medium_term",
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Fetch both top artists and top tracks.

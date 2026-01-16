@@ -360,9 +360,10 @@ def _fetch_spotify_data_with_token(token: str) -> None:
 
             artists_json = artists_res.json()
 
-        with st.spinner("Fetching your top tracks..."):
+        with st.spinner("Fetching your top tracks (up to 1000)..."):
             all_tracks = []
-            for offset in range(0, 250, 50):
+            # Spotify allows max 50 per request, offset up to ~1000
+            for offset in range(0, 1000, 50):
                 tracks_res = requests.get(
                     f"{base_url}/tracks",
                     headers=headers,
@@ -903,6 +904,15 @@ def render_results_page(
     st.subheader("Artist Preference Ranking")
     fig_ranking = plot_utility_ranking(artists, posterior_summary)
     st.plotly_chart(fig_ranking, use_container_width=True)
+
+    # Song counts per artist (collapsible)
+    songs = st.session_state.get("songs", {})
+    if songs:
+        with st.expander("Songs per Artist"):
+            counts = [(a.name, len(songs.get(a.id, []))) for a in artists]
+            counts.sort(key=lambda x: -x[1])
+            for name, count in counts:
+                st.write(f"**{count}** songs: {name}")
 
 
 def render_export_page(
