@@ -596,7 +596,25 @@ def _render_data_loading_options(has_spotify_creds: bool, data_dir: Path) -> Non
         </div>
         """, unsafe_allow_html=True)
 
-        # Fun explainer at the top
+        # App description
+        with st.expander("How does this work?"):
+            st.markdown("""
+**This app ranks your favorite artists by comparing their songs head-to-head.**
+
+But wait — how can you compare jazz to EDM bangers? You can't, and that's the point.
+
+We use a **hierarchical Bayesian model** that treats your music taste as two separate things:
+
+1. **Comparability** — First, we learn which artists are even in the same vibe-space. When you say "can't compare," you're telling us these artists are doing fundamentally different things.
+
+2. **Local preferences** — Then, *within* comparable artists, we learn who you actually prefer.
+
+At the end, you'll see:
+- Your artists **ranked by preference** (with uncertainty bars)
+- A **2D map of your music taste** where similar vibes cluster together
+            """)
+
+        # Fun explainer about auth
         with st.expander("Why can't I just one-click authorize?"):
             # Show images side by side using st.image (works reliably)
             spotify_images = [
