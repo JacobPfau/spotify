@@ -664,26 +664,30 @@ At the end, you'll see:
 
         with st.expander("Chrome / Edge", expanded=True):
             st.markdown("""
-            1. **Right-click** anywhere on the Spotify page → **Inspect** (or press **F12**)
-            2. Click the **Network** tab at the top of DevTools
-            3. **Click "Try it"** on the Spotify page - this generates the token! (log in if prompted)
-            4. In the Network list, click the **"artists"** request
-            5. Click the **Headers** tab on the right panel
-            6. Scroll down to **Request Headers** → find **Authorization**
-            7. Copy **only the token part** (starts with `BQC...` or `eyJ...`) — **don't include the word "Bearer"**
+            1. **Go to** [developer.spotify.com/.../get-users-top-artists-and-tracks](https://developer.spotify.com/documentation/web-api/reference/get-users-top-artists-and-tracks)
+            2. **Log in** with your Spotify account
+            3. **Click "Try it"** (top right of page) — this generates the token!
+            4. **Right-click** anywhere on the page → **Inspect** (bottom of menu) — or press **F12**
+            5. Click the **Network** tab at the top of DevTools
+            6. In the Network list, click the **"artists"** request
+            7. Click the **Headers** tab on the right panel
+            8. Scroll down to **Request Headers** → find **Authorization**
+            9. Copy **only the token part** (starts with `BQC...` or `eyJ...`) — **don't include the word "Bearer"**
 
             **Copy it before leaving the page!**
             """)
 
         with st.expander("Safari"):
             st.markdown("""
-            1. Enable developer tools: Safari → Settings → Advanced → "Show Develop menu"
-            2. **Develop menu** → **Show Web Inspector** (or **Cmd+Option+I**)
-            3. Click the **Network** tab
-            4. **Click "Try it"** on the Spotify page - this generates the token! (log in if prompted)
-            5. Click the **artists** request in the list
-            6. Find **Authorization: Bearer BQC...**
-            7. Copy **only the token** (everything after "Bearer ") — don't include the word "Bearer"
+            1. **Go to** [developer.spotify.com/.../get-users-top-artists-and-tracks](https://developer.spotify.com/documentation/web-api/reference/get-users-top-artists-and-tracks)
+            2. **Log in** with your Spotify account
+            3. **Click "Try it"** (top right of page) — this generates the token!
+            4. Enable developer tools: Safari → Settings → Advanced → "Show Develop menu"
+            5. **Develop menu** → **Show Web Inspector** (or **Cmd+Option+I**)
+            6. Click the **Network** tab
+            7. Click the **artists** request in the list
+            8. Find **Authorization: Bearer BQC...**
+            9. Copy **only the token** (everything after "Bearer ") — don't include the word "Bearer"
             """)
 
         st.markdown("<div style='height: 16px'></div>", unsafe_allow_html=True)
